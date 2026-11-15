@@ -1,32 +1,277 @@
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Haven</title>
 
   <style>
-    body {
-      background: #20212b;
-      color: white;
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
+
+    * {
+      box-sizing: border-box;
     }
 
-    h1 {
-      color: #b9a0ff;
+    html, body {
+      margin: 0;
+      padding: 0;
+
+      width: 100%;
+      height: 100%;
+
+      background: transparent;
+      overflow: hidden;
+
+      font-family: Arial, sans-serif;
     }
+
+
+    /* =========================
+       CHARACTER WINDOW
+    ========================= */
+
+    #character-screen {
+      width: 100%;
+      height: 100%;
+
+      position: relative;
+
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+
+      border: 1px solid rgba(170, 130, 255, 0.85);
+    }
+
+    #character {
+      width: 100%;
+      height: 95%;
+
+      object-fit: contain;
+      object-position: center bottom;
+
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+
+    /* =========================
+       SETTINGS WINDOW
+    ========================= */
+
+    #settings-screen {
+      width: 100%;
+      height: 100%;
+
+      position: relative;
+    }
+
+
+    /* SETTINGS COG */
+
+    #settings-button {
+      position: absolute;
+
+      top: 0;
+      right: 0;
+
+      width: 56px;
+      height: 56px;
+
+      border: none;
+      padding: 5px;
+
+      background: transparent;
+
+      cursor: pointer;
+    }
+
+    #settings-button img {
+      width: 100%;
+      height: 100%;
+
+      object-fit: contain;
+    }
+
+
+    /* FOUR SETTINGS BOXES */
+
+    #settings-panel {
+      display: none;
+
+      position: absolute;
+
+      top: 62px;
+      right: 8px;
+
+      width: 264px;
+      height: 190px;
+
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+
+      gap: 8px;
+      padding: 5px;
+    }
+
+    #settings-panel.open {
+      display: grid;
+    }
+
+    .settings-box {
+      width: 100%;
+      height: 100%;
+
+      object-fit: fill;
+    }
+
   </style>
 </head>
 
+
 <body>
-  <h1>Welcome to Haven!</h1>
-  <p>Your desktop companion is getting ready.</p>
+
+  <!-- CHARACTER WINDOW -->
+
+  <div id="character-screen" style="display: none;">
+
+    <img
+      id="character"
+      src="image_assets/fingercat.jpg"
+      alt="Haven character"
+    >
+
+  </div>
+
+
+
+  <!-- SETTINGS WINDOW -->
+
+  <div id="settings-screen" style="display: none;">
+
+    <button id="settings-button" aria-label="Toggle settings">
+
+      <img
+        src="image_assets/Settings.png"
+        alt="Settings"
+      >
+
+    </button>
+
+
+    <div id="settings-panel">
+
+      <img
+        class="settings-box"
+        src="image_assets/boxidkyet.png"
+        alt="Settings box"
+      >
+
+      <img
+        class="settings-box"
+        src="image_assets/boxidkyet.png"
+        alt="Settings box"
+      >
+
+      <img
+        class="settings-box"
+        src="image_assets/boxidkyet.png"
+        alt="Settings box"
+      >
+
+      <img
+        class="settings-box"
+        src="image_assets/boxidkyet.png"
+        alt="Settings box"
+      >
+
+    </div>
+
+  </div>
+
+
+
+  <!-- UI JAVASCRIPT -->
+
+  <script>
+
+    const params = new URLSearchParams(
+      window.location.search
+    );
+
+    const view = params.get('view');
+
+
+    // CHARACTER WINDOW LOGIC
+
+    if (view === 'character') {
+
+      document.getElementById(
+        'character-screen'
+      ).style.display = 'flex';
+
+      const character = document.getElementById(
+        'character'
+      );
+
+      let showingFingerCat = true;
+
+
+      // Switch expressions every 3 seconds
+
+      setInterval(() => {
+
+        showingFingerCat = !showingFingerCat;
+
+        character.src = showingFingerCat
+          ? 'image_assets/fingercat.jpg'
+          : 'image_assets/nofingercat.jpg';
+
+      }, 3000);
+
+    }
+
+
+
+    // SETTINGS WINDOW LOGIC
+
+    if (view === 'settings') {
+
+      document.getElementById(
+        'settings-screen'
+      ).style.display = 'block';
+
+      const button = document.getElementById(
+        'settings-button'
+      );
+
+      const panel = document.getElementById(
+        'settings-panel'
+      );
+
+      let isOpen = false;
+
+
+      // Toggle settings when cog is clicked
+
+      button.addEventListener('click', () => {
+
+        isOpen = !isOpen;
+
+        panel.classList.toggle(
+          'open',
+          isOpen
+        );
+
+        window.haven.toggleSettings();
+
+      });
+
+    }
+
+  </script>
+
 </body>
 </html>
