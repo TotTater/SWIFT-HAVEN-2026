@@ -29,23 +29,61 @@
       width: 100%;
       height: 100%;
     }
-#character {
-  position: absolute;
-  left: 20px;
-  bottom: 20px;
 
-  width: 500px;
-height: 500px;
+    #character {
+      position: absolute;
+      left: 20px;
+      bottom: 20px;
 
-max-width: 50.0vw;
-max-height: 50.0vh;
+      width: 500px;
+      height: 500px;
 
-  object-fit: contain;
-  object-position: bottom left;
+      max-width: 50.0vw;
+      max-height: 50.0vh;
 
-  user-select: none;
-  -webkit-user-drag: none;
-}
+      object-fit: contain;
+      object-position: bottom left;
+
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+        /* CAPTIONS (Netflix style) */
+
+    #caption {
+      position: absolute;
+      left: 50%;
+      bottom: 6%;
+      transform: translateX(-50%);
+      max-width: 70%;
+      padding: 0;
+      background: none;
+      color: white;
+      text-align: center;
+      opacity: 0;
+      transition: opacity 0.25s;
+      pointer-events: none;
+    }
+
+    #caption.show {
+      opacity: 1;
+    }
+
+    #caption-text {
+      font-size: 22px;
+      font-weight: 600;
+      line-height: 1.25;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+    }
+
+    #caption-activity {
+      font-size: 13px;
+      font-style: italic;
+      opacity: 0.8;
+      margin-top: 4px;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+    }
+
     /* SETTINGS WINDOW */
 
     #settings-screen {
@@ -122,6 +160,7 @@ max-height: 50.0vh;
     }
 
     select,
+    input[type="text"],
     button.action-button {
       width: 100%;
       padding: 9px;
@@ -145,6 +184,12 @@ max-height: 50.0vh;
       background: #242033;
     }
 
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
     .box-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -160,11 +205,19 @@ max-height: 50.0vh;
 
     #character-status,
     #capture-status,
-    #capture-count {
+    #goal-status,
+    #score-line,
+    #activity-line {
       font-size: 12px;
       color: #c9baff;
       line-height: 1.4;
       margin: 5px 0 10px;
+    }
+
+    #score-line {
+      font-size: 15px;
+      color: #ff9ecb;
+      font-weight: bold;
     }
 
     .expression-grid {
@@ -207,15 +260,6 @@ max-height: 50.0vh;
       font-size: 11px;
       overflow-wrap: anywhere;
     }
-
-    #capture-preview {
-      display: none;
-      width: 100%;
-      max-height: 130px;
-      object-fit: contain;
-      background: #111;
-      border-radius: 6px;
-    }
   </style>
 </head>
 
@@ -229,6 +273,11 @@ max-height: 50.0vh;
       src="image_assets/pink_neutral.png"
       alt="Haven character"
     >
+
+    <div id="caption">
+      <div id="caption-text"></div>
+      <div id="caption-activity"></div>
+    </div>
   </div>
 
 
@@ -266,6 +315,8 @@ max-height: 50.0vh;
           <option value="pink">Pink</option>
           <option value="bb">BB</option>
         </select>
+
+        <p id="score-line">&#9829; 0</p>
 
         <button class="action-button" id="import-character-button">
           + Import Character
@@ -318,6 +369,35 @@ max-height: 50.0vh;
       </div>
 
 
+      <!-- GOAL -->
+
+      <div class="section">
+
+        <h3>Your Goal</h3>
+
+        <p class="description">
+          Set a goal and your character will judge how you're doing
+          and your relationship will grow or shrink. With no goal,
+          they just hang out and comment on what you do.
+        </p>
+
+        <input
+          type="text"
+          id="goal-input"
+          maxlength="200"
+          placeholder="e.g. Reach the Nether in Minecraft"
+        >
+
+        <div class="button-row">
+          <button class="action-button" id="set-goal">Set Goal</button>
+          <button class="action-button secondary" id="clear-goal">Clear Goal</button>
+        </div>
+
+        <p id="goal-status">No goal set. Just hanging out.</p>
+
+      </div>
+
+
       <!-- EXPRESSION TESTER -->
 
       <div class="section">
@@ -350,9 +430,9 @@ max-height: 50.0vh;
         <h3>Screen Observation</h3>
 
         <p class="description">
-          Choose a display and enable observation when you want Haven
-          to capture screenshots. Screenshots are currently only
-          captured locally; they are not sent to an AI.
+          Choose a display and enable observation. Screenshots are
+          analyzed locally on your computer by Ollama. Nothing is
+          uploaded anywhere.
         </p>
 
         <label for="screen-select">Choose a display</label>
@@ -377,16 +457,7 @@ max-height: 50.0vh;
           Observation is off.
         </p>
 
-        <p id="capture-count">
-          Screenshots captured: 0
-        </p>
-
-        <video
-          id="capture-preview"
-          autoplay
-          muted
-          playsinline
-        ></video>
+        <p id="activity-line"></p>
 
       </div>
 
@@ -409,6 +480,11 @@ max-height: 50.0vh;
       document.getElementById('character-screen').style.display = 'block';
 
       const characterImage = document.getElementById('character');
+      const caption = document.getElementById('caption');
+      const captionText = document.getElementById('caption-text');
+      const captionActivity = document.getElementById('caption-activity');
+
+      let hideTimer = null;
 
       window.haven.onCharacterUpdate(data => {
 
@@ -416,6 +492,24 @@ max-height: 50.0vh;
 
         characterImage.src = data.image;
         characterImage.alt = data.name;
+
+      });
+
+      // Captions at the bottom of the screen
+      window.haven.onReaction(data => {
+
+        if (!data || !data.text) return;
+
+        captionText.textContent = data.text;
+        captionActivity.textContent = data.activity || '';
+        captionActivity.style.display = data.activity ? 'block' : 'none';
+
+        caption.classList.add('show');
+
+        clearTimeout(hideTimer);
+        hideTimer = setTimeout(() => {
+          caption.classList.remove('show');
+        }, 4500);
 
       });
 
@@ -451,6 +545,9 @@ max-height: 50.0vh;
       const chooseFolderButton =
         document.getElementById('choose-character-folder');
 
+      const scoreLine =
+        document.getElementById('score-line');
+
       let isOpen = false;
 
 
@@ -465,6 +562,17 @@ max-height: 50.0vh;
         window.haven.toggleSettings();
 
       });
+
+
+      // SCORE DISPLAY
+
+      function showScore(value) {
+        scoreLine.innerHTML = '&#9829; ' + value;
+      }
+
+      async function refreshScore() {
+        showScore(await window.haven.getAffinity());
+      }
 
 
       // LOAD CHARACTERS
@@ -500,6 +608,8 @@ max-height: 50.0vh;
             ? `Current character: ${current.name}`
             : 'Choose a character';
 
+          refreshScore();
+
         } catch (error) {
 
           console.error(error);
@@ -526,6 +636,8 @@ max-height: 50.0vh;
 
           characterStatus.textContent =
             `Current character: ${selectedOption.textContent}`;
+
+          refreshScore();
         } else {
           characterStatus.textContent =
             'Could not select that character.';
@@ -602,6 +714,44 @@ max-height: 50.0vh;
 
 
       // --------------------------------
+      // GOAL
+      // --------------------------------
+
+      const goalInput = document.getElementById('goal-input');
+      const goalStatus = document.getElementById('goal-status');
+
+      function showGoal(goal) {
+        goalStatus.textContent = goal
+          ? `Goal: ${goal}`
+          : 'No goal set. Just hanging out.';
+      }
+
+      async function saveGoal(text) {
+        await window.haven.setGoal(text);
+        showGoal(text);
+      }
+
+      document.getElementById('set-goal').addEventListener('click', () => {
+        saveGoal(goalInput.value.trim());
+      });
+
+      goalInput.addEventListener('keydown', event => {
+        if (event.key === 'Enter') saveGoal(goalInput.value.trim());
+      });
+
+      document.getElementById('clear-goal').addEventListener('click', () => {
+        goalInput.value = '';
+        saveGoal('');
+      });
+
+      (async () => {
+        const goal = await window.haven.getGoal();
+        goalInput.value = goal;
+        showGoal(goal);
+      })();
+
+
+      // --------------------------------
       // SCREEN OBSERVATION
       // --------------------------------
 
@@ -620,16 +770,11 @@ max-height: 50.0vh;
       const captureStatus =
         document.getElementById('capture-status');
 
-      const countLabel =
-        document.getElementById('capture-count');
+      const activityLine =
+        document.getElementById('activity-line');
 
-      const preview =
-        document.getElementById('capture-preview');
-
-      let captureStream = null;
-      let captureInterval = null;
-      let screenshotCount = 0;
       let selectedScreen = null;
+      let observing = false;
 
 
       async function loadScreens() {
@@ -694,7 +839,9 @@ max-height: 50.0vh;
         );
 
         captureStatus.textContent = accepted
-          ? 'Display selected. Observation is off.'
+          ? (observing
+              ? 'Observation is ON.'
+              : 'Display selected. Observation is off.')
           : 'Could not select that display.';
 
       });
@@ -703,143 +850,56 @@ max-height: 50.0vh;
       refreshButton.addEventListener('click', loadScreens);
 
 
-      // START CAPTURE
+      // START OBSERVATION
 
-      async function startCapture() {
-
-        if (captureStream) return;
+      startButton.addEventListener('click', async () => {
 
         if (!selectedScreen) {
-
-          captureStatus.textContent =
-            'Choose a display first.';
-
+          captureStatus.textContent = 'Choose a display first.';
           return;
-
         }
 
-        try {
+        const result = await window.haven.startWatching();
 
+        if (result.ok) {
+          observing = true;
           captureStatus.textContent =
-            'Requesting screen access...';
-
-          captureStream =
-            await navigator.mediaDevices.getDisplayMedia({
-              video: {
-                frameRate: 30
-              },
-              audio: false
-            });
-
-          preview.srcObject = captureStream;
-          preview.style.display = 'block';
-
-          await preview.play();
-
-          screenshotCount = 0;
-
-          countLabel.textContent =
-            'Screenshots captured: 0';
-
-          const canvas = document.createElement('canvas');
-          const context = canvas.getContext('2d');
-
-          function captureFrame() {
-
-            if (!captureStream || !preview.videoWidth) return;
-
-            const scale = Math.min(
-              1,
-              1280 / preview.videoWidth
-            );
-
-            canvas.width = Math.round(
-              preview.videoWidth * scale
-            );
-
-            canvas.height = Math.round(
-              preview.videoHeight * scale
-            );
-
-            context.drawImage(
-              preview,
-              0,
-              0,
-              canvas.width,
-              canvas.height
-            );
-
-            screenshotCount++;
-
-            countLabel.textContent =
-              `Screenshots captured: ${screenshotCount}`;
-
-          }
-
-          captureFrame();
-
-          captureInterval = setInterval(
-            captureFrame,
-            3000
-          );
-
-          captureStatus.textContent =
-            'Observation is ON. Capturing every 3 seconds.';
-
-          captureStream.getVideoTracks()[0].addEventListener(
-            'ended',
-            stopCapture
-          );
-
-        } catch (error) {
-
-          console.error(error);
-
-          captureStatus.textContent =
-            'Screen capture was cancelled or could not start.';
-
-          stopCapture();
-
+            'Observation is ON. Your character is watching.';
+        } else {
+          captureStatus.textContent = result.message;
         }
 
-      }
+      });
 
 
-      // STOP CAPTURE
+      // STOP OBSERVATION
 
-      function stopCapture() {
+      stopButton.addEventListener('click', async () => {
 
-        if (captureInterval) {
+        await window.haven.stopWatching();
 
-          clearInterval(captureInterval);
-          captureInterval = null;
+        observing = false;
+        captureStatus.textContent = 'Observation is OFF.';
+        activityLine.textContent = '';
 
+      });
+
+
+      // LIVE UPDATES FROM THE AI
+
+      window.haven.onReaction(data => {
+
+        if (!data) return;
+
+        if (typeof data.affinity === 'number') {
+          showScore(data.affinity);
         }
 
-        if (captureStream) {
-
-          captureStream.getTracks().forEach(track => {
-            track.stop();
-          });
-
-          captureStream = null;
-
+        if (data.activity) {
+          activityLine.textContent = `Seeing: ${data.activity}`;
         }
 
-        preview.pause();
-        preview.srcObject = null;
-        preview.style.display = 'none';
-
-        captureStatus.textContent =
-          'Observation is OFF.';
-
-      }
-
-
-      startButton.addEventListener('click', startCapture);
-      stopButton.addEventListener('click', stopCapture);
-
-      window.addEventListener('beforeunload', stopCapture);
+      });
 
 
       // INITIALIZE

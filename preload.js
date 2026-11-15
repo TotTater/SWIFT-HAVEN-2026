@@ -28,6 +28,9 @@ contextBridge.exposeInMainWorld('haven', {
   setGoal: text =>
     ipcRenderer.invoke('set-goal', text),
 
+  getGoal: () =>
+    ipcRenderer.invoke('get-goal'),
+
   startWatching: () =>
     ipcRenderer.invoke('start-watching'),
 
@@ -39,21 +42,13 @@ contextBridge.exposeInMainWorld('haven', {
 
   onCharacterUpdate: callback => {
     const listener = (event, data) => callback(data);
-
     ipcRenderer.on('character-update', listener);
-
-    return () => {
-      ipcRenderer.removeListener('character-update', listener);
-    };
+    return () => ipcRenderer.removeListener('character-update', listener);
   },
 
   onReaction: callback => {
     const listener = (event, data) => callback(data);
-
     ipcRenderer.on('reaction', listener);
-
-    return () => {
-      ipcRenderer.removeListener('reaction', listener);
-    };
+    return () => ipcRenderer.removeListener('reaction', listener);
   }
 });

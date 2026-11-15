@@ -12,6 +12,8 @@ const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
 const { createWatcher } = require('./vision');
+const { STATUS_INFO, NEGATIVE, getPersonality } = require('./personalities');
+const { CAPTION_SCRIPT, GOAL_PANEL_SCRIPT } = require('./inject');
 
 let characterWindow;
 let settingsWindow;
@@ -23,10 +25,26 @@ let selectedCharacterId = 'pink';
 let selectedExpression = 'neutral';
 let currentCharacterName = 'Pink';
 
-// Relationship / vision state
-let goal = 'Make progress in the game';
-let lastNote = '';
-let relationship = {}; // { characterId: score }
+// Goal + relationship
+let goal = '';                 // empty = no goal, just hang out
+let relationship = {};         // { characterId: score }
+let lastScoreAt = 0;
+const SCORE_COOLDOWN_MS = 8000;
+
+// Mood + captions
+let mood = { status: 'idle_or_menu', activity: '' };
+let moodExpression = 'neutral';
+let hasAnalysis = false;
+let freshAnalysis = false;
+let lastCaptionStatus = '';
+let lastLineAt = 0;
+let lastLine = '';
+let pleaIndex = 0;
+let talkTimer = null;
+let captionInterval = null;
+
+const CAPTION_EVERY_MS = 3000;
+const COMMENTARY_EVERY_MS = 12000; // how often it comments while the situation stays the same
 
 const SETTINGS_SIZE = 56;
 const SETTINGS_WIDTH = 380;
@@ -272,50 +290,149 @@ async function loadRelationship() {
 
 
 // ------------------------------------
-// VISION WATCHER (local Ollama, no API)
+// MOOD + CAPTIONS
 // ------------------------------------
 
-async function applyReaction(r) {
-  const current = relationship[selectedCharacterId] ?? 0;
-
-  relationship[selectedCharacterId] = Math.max(
-    -100,
-    Math.min(100, current + r.affinity_delta)
-  );
-
-  lastNote = r.progress_note;
-  selectedExpression = r.expression;
-
-  await sendCharacterState();
-  await saveRelationship();
+function broadcast(payload) {
+  const data = {
+    affinity: relationship[selectedCharacterId] ?? 0,
+    ...payload
+  };
 
   for (const win of [characterWindow, settingsWindow]) {
     if (win && !win.isDestroyed()) {
-      win.webContents.send('reaction', {
-        comment: r.comment,
-        affinity: relationship[selectedCharacterId],
-        delta: r.affinity_delta
-      });
+      win.webContents.send('reaction', data);
+    }
+  }
+}
+
+
+function setMoodExpression(expression) {
+  moodExpression = expression;
+
+  // If the character is mid-"talking", the talk timer restores the mood afterwards
+  if (!talkTimer) {
+    selectedExpression = expression;
+    sendCharacterState();
+  }
+}
+
+
+function say(text, activity = '') {
+  lastLine = text;
+  broadcast({ text, activity, status: mood.status });
+
+  // Show the talking image briefly, then go back to the current mood
+  if (talkTimer) clearTimeout(talkTimer);
+
+  selectedExpression = 'talking';
+  sendCharacterState();
+
+  talkTimer = setTimeout(() => {
+    talkTimer = null;
+    selectedExpression = moodExpression;
+    sendCharacterState();
+  }, 1500);
+}
+
+
+function pickLine(status) {
+  const lines = getPersonality(selectedCharacterId).lines[status] || [];
+  if (!lines.length) return '';
+
+  let choice = lines[Math.floor(Math.random() * lines.length)];
+
+  if (lines.length > 1) {
+    while (choice === lastLine) {
+      choice = lines[Math.floor(Math.random() * lines.length)];
     }
   }
 
-  console.log(
-    `[${currentCharacterName}] ${r.expression} (${r.affinity_delta >= 0 ? '+' : ''}${r.affinity_delta}) ` +
-    `score=${relationship[selectedCharacterId]} | "${r.comment}"`
-  );
+  return choice;
 }
+
+
+function nextPlea() {
+  const pleas = getPersonality(selectedCharacterId).pleas;
+  const plea = pleas[pleaIndex % pleas.length];
+  pleaIndex++;
+  return plea;
+}
+
+
+// Runs whenever the AI reports something new about the screen
+async function handleAnalysis(result) {
+  mood = { status: result.status, activity: result.activity };
+  hasAnalysis = true;
+  freshAnalysis = true;
+
+  const info = STATUS_INFO[result.status];
+  setMoodExpression(info.expression);
+
+  // Score only changes with a goal set, and at most once per cooldown
+  const now = Date.now();
+
+  if (goal && info.delta !== 0 && now - lastScoreAt >= SCORE_COOLDOWN_MS) {
+    lastScoreAt = now;
+
+    const current = relationship[selectedCharacterId] ?? 0;
+    relationship[selectedCharacterId] = Math.max(
+      -100,
+      Math.min(100, current + info.delta)
+    );
+
+    await saveRelationship();
+    broadcast({}); // updates the score display, no caption
+  }
+}
+
+
+// Runs every 3 seconds
+function captionTick() {
+  if (!watcher.isRunning() || !hasAnalysis) return;
+
+  const now = Date.now();
+
+  // 1. The situation changed -> react to it
+  if (mood.status !== lastCaptionStatus) {
+    lastCaptionStatus = mood.status;
+    pleaIndex = 0;
+    freshAnalysis = false;
+    lastLineAt = now;
+    say(pickLine(mood.status), mood.activity);
+    return;
+  }
+
+  // 2. Nothing changed and the mood is negative -> keep begging
+  if (NEGATIVE.has(mood.status)) {
+    say(nextPlea());
+    return;
+  }
+
+  // 3. Nothing changed and the mood is fine -> hold the mood,
+  //    but comment now and then if the player is still doing new things
+  if (freshAnalysis && now - lastLineAt >= COMMENTARY_EVERY_MS) {
+    freshAnalysis = false;
+    lastLineAt = now;
+    say(pickLine(mood.status), mood.activity);
+  }
+}
+
 
 const watcher = createWatcher({
   getScreenId: () => selectedScreenId,
-  getContext: () => ({
-    characterName: currentCharacterName,
-    goal,
-    affinity: relationship[selectedCharacterId] ?? 0,
-    lastNote
-  }),
-  onReaction: applyReaction,
+  getGoal: () => goal,
+  onResult: handleAnalysis,
   onError: err => console.error('Vision error:', err.message)
 });
+
+
+function resetForCharacterChange() {
+  selectedExpression = moodExpression;
+  lastLine = '';
+  lastCaptionStatus = '';
+  pleaIndex = 0;
+}
 
 
 // ------------------------------------
@@ -359,6 +476,11 @@ function createWindows() {
 
   characterWindow.webContents.on('did-finish-load', () => {
     sendCharacterState();
+
+    // Netflix-style caption bar
+    characterWindow.webContents
+      .executeJavaScript(CAPTION_SCRIPT)
+      .catch(err => console.error('Caption inject error:', err.message));
   });
 
 
@@ -392,6 +514,13 @@ function createWindows() {
 
   settingsWindow.loadFile('index.html', {
     query: { view: 'settings' }
+  });
+
+  settingsWindow.webContents.on('did-finish-load', () => {
+    // Goal box + pause button + score
+    settingsWindow.webContents
+      .executeJavaScript(GOAL_PANEL_SCRIPT)
+      .catch(err => console.error('Goal panel inject error:', err.message));
   });
 }
 
@@ -447,11 +576,11 @@ ipcMain.handle('select-character', async (event, id) => {
   }
 
   selectedCharacterId = id;
-  selectedExpression = 'neutral';
-  lastNote = '';
+  resetForCharacterChange();
 
   await saveSelectedCharacter();
   await sendCharacterState();
+  broadcast({}); // refresh the score display for this character
 
   return true;
 });
@@ -549,11 +678,11 @@ ipcMain.handle('import-character', async () => {
   }
 
   selectedCharacterId = id;
-  selectedExpression = 'neutral';
-  lastNote = '';
+  resetForCharacterChange();
 
   await saveSelectedCharacter();
   await sendCharacterState();
+  broadcast({});
 
   return {
     success: true,
@@ -592,7 +721,7 @@ ipcMain.handle('select-screen', async (event, screenId) => {
 
   selectedScreenId = selected.id;
 
-  // Auto-start the reaction loop once a screen is chosen
+  // Auto-start watching once a screen is chosen
   watcher.start();
 
   return true;
@@ -604,10 +733,17 @@ ipcMain.handle('select-screen', async (event, screenId) => {
 // ------------------------------------
 
 ipcMain.handle('set-goal', (event, text) => {
-  goal = String(text).slice(0, 200) || 'Make progress in the game';
-  lastNote = '';
+  goal = String(text || '').trim().slice(0, 200);
+
+  // Look at the screen again with the new goal in mind
+  lastCaptionStatus = '';
+  pleaIndex = 0;
+  watcher.refresh();
+
   return true;
 });
+
+ipcMain.handle('get-goal', () => goal);
 
 ipcMain.handle('start-watching', () => {
   if (!selectedScreenId) {
@@ -674,11 +810,14 @@ app.whenReady().then(async () => {
   );
 
   createWindows();
+
+  captionInterval = setInterval(captionTick, CAPTION_EVERY_MS);
 });
 
 
 app.on('before-quit', () => {
   watcher.stop();
+  clearInterval(captionInterval);
 });
 
 

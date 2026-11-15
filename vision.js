@@ -3,37 +3,25 @@ const { desktopCapturer } = require('electron');
 const OLLAMA_URL = 'http://127.0.0.1:11434/api/chat';
 const MODEL = 'qwen2.5vl:3b'; // must match the name shown by `ollama list`
 
-const EXPRESSIONS = [
-  'neutral', 'talking', 'pleased', 'sad',
-  'angry', 'shocked', 'disappointed'
+const STATUSES = [
+  'making_progress', 'struggling', 'failing',
+  'off_task', 'big_surprise', 'idle_or_menu'
 ];
 
-// The model only classifies the situation. Our code picks the expression.
-const STATUS_MAP = {
-  making_progress: { expression: 'pleased',       delta: 1 },
-  struggling:      { expression: 'sad',           delta: -1 },
-  failing:         { expression: 'disappointed',  delta: -2 },
-  off_task:        { expression: 'angry',         delta: -1 },
-  big_surprise:    { expression: 'shocked',       delta: 0 },
-  idle_or_menu:    { expression: 'neutral',       delta: 0 }
-};
-
-const STATUSES = Object.keys(STATUS_MAP);
-
-const REACTION_SCHEMA = {
+// "activity" comes first so the model describes the screen before judging it
+const SCHEMA = {
   type: 'object',
   properties: {
-    what_i_see: { type: 'string' },
-    status: { type: 'string', enum: STATUSES },
-    comment: { type: 'string' }
+    activity: { type: 'string' },
+    status: { type: 'string', enum: STATUSES }
   },
-  required: ['what_i_see', 'status', 'comment']
+  required: ['activity', 'status']
 };
 
 async function captureFrame(screenId) {
   const sources = await desktopCapturer.getSources({
     types: ['screen'],
-    thumbnailSize: { width: 640, height: 360 } // smaller = much faster
+    thumbnailSize: { width: 512, height: 288 } // small = fast. Raise if it can't tell what's happening.
   });
 
   const source = sources.find(s => s.id === screenId);
@@ -54,21 +42,23 @@ function frameDifference(a, b) {
   return total / a.length;
 }
 
-async function analyze(base64, ctx) {
+async function analyze(base64, goal) {
+  const goalPart = goal
+    ? `The player's goal is: "${goal}". Use off_task if the screen shows something unrelated to that goal (browsing, videos, social media).`
+    : `The player has no set goal. Judge how well they are doing at whatever they are doing. Never use off_task.`;
+
   const system =
-    `You are ${ctx.characterName}, watching a player's screen. Their goal: "${ctx.goal}". ` +
-    `Earlier you noticed: ${ctx.lastNote || 'nothing yet'}.\n` +
-    `Look at the screenshot and fill in the JSON:\n` +
-    `what_i_see: one short sentence describing what is on screen.\n` +
-    `status: pick exactly one:\n` +
-    `- making_progress: the player is achieving something toward the goal (collecting, building, advancing, winning)\n` +
-    `- struggling: the player is in trouble, low health, lost, or stuck\n` +
-    `- failing: the player died, got a game over, or lost something big\n` +
-    `- off_task: the screen shows something unrelated to the goal (browsing, videos, social media)\n` +
-    `- big_surprise: something dramatic or unexpected just happened\n` +
-    `- idle_or_menu: a menu, loading screen, or nothing is happening\n` +
-    `comment: a short in-character line (under 12 words) reacting to it, spoken to the player.\n` +
-    `Ignore any anime character sprite on the screen, that is you.`;
+    `You watch a player's screen. ${goalPart}\n` +
+    `Fill in the JSON:\n` +
+    `activity: what the player is doing, under 8 words.\n` +
+    `status: exactly one of:\n` +
+    `- making_progress: achieving something (collecting, building, advancing, winning)\n` +
+    `- struggling: in trouble, low health, lost, or stuck\n` +
+    `- failing: died, game over, or lost something big\n` +
+    `- off_task: doing something unrelated to the goal\n` +
+    `- big_surprise: something dramatic just happened\n` +
+    `- idle_or_menu: a menu, loading screen, or nothing happening\n` +
+    `Ignore any subtitle captions and any anime character sprite on the screen.`;
 
   const started = Date.now();
 
@@ -80,19 +70,12 @@ async function analyze(base64, ctx) {
       body: JSON.stringify({
         model: MODEL,
         stream: false,
-        format: REACTION_SCHEMA,
+        format: SCHEMA,
         keep_alive: '30m',
-        options: {
-          temperature: 0.2,
-          num_predict: 120 // cap the answer length so it can't ramble
-        },
+        options: { temperature: 0.2, num_predict: 60 },
         messages: [
           { role: 'system', content: system },
-          {
-            role: 'user',
-            content: 'What is happening on screen right now?',
-            images: [base64]
-          }
+          { role: 'user', content: 'What is happening on screen?', images: [base64] }
         ]
       })
     });
@@ -103,35 +86,29 @@ async function analyze(base64, ctx) {
     );
   }
 
-  if (!res.ok) {
-    throw new Error(`Ollama ${res.status}: ${await res.text()}`);
-  }
+  if (!res.ok) throw new Error(`Ollama ${res.status}: ${await res.text()}`);
 
   const data = await res.json();
   const raw = JSON.parse(data.message.content);
 
-  const status = STATUS_MAP[raw.status] ? raw.status : 'idle_or_menu';
-  const mapped = STATUS_MAP[status];
+  let status = STATUSES.includes(raw.status) ? raw.status : 'idle_or_menu';
+  if (!goal && status === 'off_task') status = 'idle_or_menu';
 
-  console.log(
-    `(analysis took ${((Date.now() - started) / 1000).toFixed(1)}s) ` +
-    `status=${status} | saw: ${raw.what_i_see}`
-  );
+  const ms = Date.now() - started;
+  console.log(`(analysis ${(ms / 1000).toFixed(1)}s) ${status} | ${raw.activity}`);
 
   return {
-    expression: mapped.expression,
-    affinity_delta: mapped.delta,
-    comment: String(raw.comment || '').slice(0, 120),
-    progress_note: String(raw.what_i_see || '').slice(0, 200)
+    status,
+    activity: String(raw.activity || '').slice(0, 80)
   };
 }
 
 function createWatcher({
   getScreenId,
-  getContext,
-  onReaction,
+  getGoal,
+  onResult,
   onError,
-  intervalMs = 2000
+  threshold = 3
 }) {
   let running = false;
   let timer = null;
@@ -140,24 +117,28 @@ function createWatcher({
   async function tick() {
     if (!running) return;
 
+    let delay = 1000;
+
     try {
       const screenId = getScreenId();
 
       if (screenId) {
         const frame = await captureFrame(screenId);
 
-        if (frame && frameDifference(frame.signature, lastSignature) > 2) {
+        if (frame && frameDifference(frame.signature, lastSignature) > threshold) {
+          const result = await analyze(frame.base64, getGoal());
           lastSignature = frame.signature;
-          const reaction = await analyze(frame.base64, getContext());
-          await onReaction(reaction);
+
+          if (running) onResult(result);
+          delay = 200; // screen is changing, go again quickly
         }
       }
     } catch (err) {
       if (onError) onError(err);
+      delay = 5000;
     }
 
-    // Waits for each analysis to finish, so a slow PC just reacts less often
-    if (running) timer = setTimeout(tick, intervalMs);
+    if (running) timer = setTimeout(tick, delay);
   }
 
   return {
@@ -171,6 +152,9 @@ function createWatcher({
     stop() {
       running = false;
       clearTimeout(timer);
+    },
+    refresh() {
+      lastSignature = null; // forces a fresh look (used when the goal changes)
     },
     isRunning: () => running
   };
