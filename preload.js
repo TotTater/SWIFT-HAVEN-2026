@@ -4,6 +4,9 @@ contextBridge.exposeInMainWorld('haven', {
   toggleSettings: () =>
     ipcRenderer.send('toggle-settings'),
 
+  quitApp: () =>
+    ipcRenderer.send('quit-app'),
+
   listScreens: () =>
     ipcRenderer.invoke('list-screens'),
 

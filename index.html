@@ -48,7 +48,7 @@
       -webkit-user-drag: none;
     }
 
-        /* CAPTIONS (Netflix style) */
+    /* CAPTIONS (Netflix style) */
 
     #caption {
       position: absolute;
@@ -117,7 +117,7 @@
       top: 62px;
       right: 8px;
       width: 364px;
-      height: 548px;
+      height: calc(100vh - 72px);
       padding: 12px;
       background: rgba(25, 22, 38, 0.97);
       border: 1px solid rgba(170, 130, 255, 0.5);
@@ -183,24 +183,18 @@
     button.secondary {
       background: #242033;
     }
+    button.danger {
+      background: #6b2233;
+      border-color: #c0506a;
+    }
 
+    button.danger:hover {
+      background: #8a2c42;
+    }
     .button-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
-    }
-
-    .box-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
-
-    .settings-box {
-      width: 100%;
-      height: 60px;
-      object-fit: contain;
     }
 
     #character-status,
@@ -290,15 +284,8 @@
     </button>
 
     <div id="settings-panel">
-
+      <button class="action-button danger" id="quit-app">Close Haven</button>
       <h2>Haven Settings</h2>
-
-      <div class="box-grid">
-        <img class="settings-box" src="image_assets/boxidkyet.png" alt="">
-        <img class="settings-box" src="image_assets/boxidkyet.png" alt="">
-        <img class="settings-box" src="image_assets/boxidkyet.png" alt="">
-        <img class="settings-box" src="image_assets/boxidkyet.png" alt="">
-      </div>
 
 
       <!-- CHARACTER SELECTOR -->
@@ -369,71 +356,11 @@
       </div>
 
 
-      <!-- GOAL -->
-
-      <div class="section">
-
-        <h3>Your Goal</h3>
-
-        <p class="description">
-          Set a goal and your character will judge how you're doing
-          and your relationship will grow or shrink. With no goal,
-          they just hang out and comment on what you do.
-        </p>
-
-        <input
-          type="text"
-          id="goal-input"
-          maxlength="200"
-          placeholder="e.g. Reach the Nether in Minecraft"
-        >
-
-        <div class="button-row">
-          <button class="action-button" id="set-goal">Set Goal</button>
-          <button class="action-button secondary" id="clear-goal">Clear Goal</button>
-        </div>
-
-        <p id="goal-status">No goal set. Just hanging out.</p>
-
-      </div>
-
-
-      <!-- EXPRESSION TESTER -->
-
-      <div class="section">
-
-        <h3>Test Expressions</h3>
-
-        <p class="description">
-          Click an expression to see how your selected character looks.
-        </p>
-
-        <div class="expression-grid">
-
-          <button data-expression="neutral">Neutral</button>
-          <button data-expression="talking">Talking</button>
-          <button data-expression="pleased">Pleased</button>
-          <button data-expression="sad">Sad</button>
-          <button data-expression="angry">Angry</button>
-          <button data-expression="shocked">Shocked</button>
-          <button data-expression="disappointed">Disappointed</button>
-
-        </div>
-
-      </div>
-
-
       <!-- SCREEN OBSERVATION -->
 
       <div class="section">
 
         <h3>Screen Observation</h3>
-
-        <p class="description">
-          Choose a display and enable observation. Screenshots are
-          analyzed locally on your computer by Ollama. Nothing is
-          uploaded anywhere.
-        </p>
 
         <label for="screen-select">Choose a display</label>
 
@@ -458,6 +385,50 @@
         </p>
 
         <p id="activity-line"></p>
+
+      </div>
+
+
+      <!-- GOAL -->
+
+      <div class="section">
+
+        <h3>Your Goal (optional)</h3>
+
+        <input
+          type="text"
+          id="goal-input"
+          maxlength="200"
+          placeholder="e.g. Reach the Nether in Minecraft"
+        >
+
+        <div class="button-row">
+          <button class="action-button" id="set-goal">Set</button>
+          <button class="action-button secondary" id="clear-goal">Clear</button>
+        </div>
+
+        <p id="goal-status">No goal. Just hanging out.</p>
+
+      </div>
+
+
+      <!-- EXPRESSION TESTER -->
+
+      <div class="section">
+
+        <h3>Test Expressions</h3>
+
+        <div class="expression-grid">
+
+          <button data-expression="neutral">Neutral</button>
+          <button data-expression="talking">Talking</button>
+          <button data-expression="pleased">Pleased</button>
+          <button data-expression="sad">Sad</button>
+          <button data-expression="angry">Angry</button>
+          <button data-expression="shocked">Shocked</button>
+          <button data-expression="disappointed">Disappointed</button>
+
+        </div>
 
       </div>
 
@@ -547,7 +518,10 @@
 
       const scoreLine =
         document.getElementById('score-line');
-
+      
+        document.getElementById('quit-app').addEventListener('click', () => {
+        window.haven.quitApp();
+      });
       let isOpen = false;
 
 
@@ -723,7 +697,7 @@
       function showGoal(goal) {
         goalStatus.textContent = goal
           ? `Goal: ${goal}`
-          : 'No goal set. Just hanging out.';
+          : 'No goal. Just hanging out.';
       }
 
       async function saveGoal(text) {
@@ -817,7 +791,9 @@
           );
 
           captureStatus.textContent = accepted
-            ? 'Display ready. Observation is off.'
+            ? (observing
+                ? 'Observation is ON.'
+                : 'Display ready. Observation is off.')
             : 'Could not select that display.';
 
         } catch (error) {

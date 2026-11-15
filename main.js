@@ -13,7 +13,6 @@ const path = require('path');
 const { pathToFileURL } = require('url');
 const { createWatcher } = require('./vision');
 const { STATUS_INFO, NEGATIVE, getPersonality } = require('./personalities');
-const { CAPTION_SCRIPT, GOAL_PANEL_SCRIPT } = require('./inject');
 
 let characterWindow;
 let settingsWindow;
@@ -48,7 +47,7 @@ const COMMENTARY_EVERY_MS = 12000; // how often it comments while the situation 
 
 const SETTINGS_SIZE = 56;
 const SETTINGS_WIDTH = 380;
-const SETTINGS_HEIGHT = 620;
+const SETTINGS_HEIGHT = 860; // capped to your screen height automatically
 
 const IMAGE_FOLDER = path.join(__dirname, 'image_assets');
 
@@ -382,12 +381,17 @@ async function handleAnalysis(result) {
     );
 
     await saveRelationship();
-    broadcast({}); // updates the score display, no caption
   }
+
+  // Updates the score + "Seeing: ..." text in the settings panel (no caption)
+  broadcast({ activity: result.activity });
+
+  // React right away instead of waiting for the next 3-second tick
+  if (result.status !== lastCaptionStatus) captionTick();
 }
 
 
-// Runs every 3 seconds
+// Runs every 3 seconds (and immediately when the situation changes)
 function captionTick() {
   if (!watcher.isRunning() || !hasAnalysis) return;
 
@@ -476,11 +480,6 @@ function createWindows() {
 
   characterWindow.webContents.on('did-finish-load', () => {
     sendCharacterState();
-
-    // Netflix-style caption bar
-    characterWindow.webContents
-      .executeJavaScript(CAPTION_SCRIPT)
-      .catch(err => console.error('Caption inject error:', err.message));
   });
 
 
@@ -515,13 +514,6 @@ function createWindows() {
   settingsWindow.loadFile('index.html', {
     query: { view: 'settings' }
   });
-
-  settingsWindow.webContents.on('did-finish-load', () => {
-    // Goal box + pause button + score
-    settingsWindow.webContents
-      .executeJavaScript(GOAL_PANEL_SCRIPT)
-      .catch(err => console.error('Goal panel inject error:', err.message));
-  });
 }
 
 
@@ -541,7 +533,7 @@ ipcMain.on('toggle-settings', () => {
       x: area.x + area.width - SETTINGS_WIDTH,
       y: area.y,
       width: SETTINGS_WIDTH,
-      height: SETTINGS_HEIGHT
+      height: Math.min(SETTINGS_HEIGHT, area.height)
     });
   } else {
     settingsWindow.setBounds({
@@ -721,9 +713,6 @@ ipcMain.handle('select-screen', async (event, screenId) => {
 
   selectedScreenId = selected.id;
 
-  // Auto-start watching once a screen is chosen
-  watcher.start();
-
   return true;
 });
 
@@ -763,7 +752,10 @@ ipcMain.handle('get-affinity', () => {
   return relationship[selectedCharacterId] ?? 0;
 });
 
-
+ipcMain.on('quit-app', () => {
+  watcher.stop();
+  app.quit();
+});
 // ------------------------------------
 // APP STARTUP
 // ------------------------------------
