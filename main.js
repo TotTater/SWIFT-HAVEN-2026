@@ -1,37 +1,36 @@
 
-const { app, BrowserWindow, screen, ipcMain } = require('electron');
+const {
+  app,
+  BrowserWindow,
+  screen,
+  ipcMain,
+  desktopCapturer,
+  session
+} = require('electron');
+
 const path = require('path');
 
 let characterWindow;
 let settingsWindow;
 
 let settingsExpanded = false;
-
-// Window dimensions
-const CHARACTER_WIDTH = 460;
-const CHARACTER_HEIGHT = 520;
+let selectedScreenId = null;
 
 const SETTINGS_SIZE = 56;
-const SETTINGS_EXPANDED_WIDTH = 280;
-const SETTINGS_EXPANDED_HEIGHT = 260;
+const SETTINGS_WIDTH = 380;
+const SETTINGS_HEIGHT = 540;
 
 function createWindows() {
   const display = screen.getPrimaryDisplay();
-  const area = display.workArea;
+  const bounds = display.bounds;
+  const workArea = display.workArea;
 
-  // Position the character near the bottom-right
-  const characterX =
-    area.x + area.width - CHARACTER_WIDTH - 30;
-
-  const characterY =
-    area.y + area.height - CHARACTER_HEIGHT - 30;
-
-  // CHARACTER WINDOW
+  // FULL-SCREEN TRANSPARENT CHARACTER WINDOW
   characterWindow = new BrowserWindow({
-    x: characterX,
-    y: characterY,
-    width: CHARACTER_WIDTH,
-    height: CHARACTER_HEIGHT,
+    x: bounds.x,
+    y: bounds.y,
+    width: bounds.width,
+    height: bounds.height,
 
     frame: false,
     transparent: true,
@@ -48,9 +47,7 @@ function createWindows() {
     }
   });
 
-  // Make the character window click-through
   characterWindow.setIgnoreMouseEvents(true);
-
   characterWindow.setAlwaysOnTop(true, 'screen-saver');
   characterWindow.setVisibleOnAllWorkspaces(true);
 
@@ -58,11 +55,10 @@ function createWindows() {
     query: { view: 'character' }
   });
 
-
-  // SETTINGS WINDOW
+  // SETTINGS WINDOW - TOP RIGHT
   settingsWindow = new BrowserWindow({
-    x: characterX + CHARACTER_WIDTH - SETTINGS_SIZE,
-    y: characterY,
+    x: workArea.x + workArea.width - SETTINGS_SIZE,
+    y: workArea.y,
 
     width: SETTINGS_SIZE,
     height: SETTINGS_SIZE,
@@ -92,27 +88,26 @@ function createWindows() {
 }
 
 
-// OPEN AND CLOSE SETTINGS
+// EXPAND / COLLAPSE SETTINGS
 ipcMain.on('toggle-settings', () => {
-  if (!settingsWindow || settingsWindow.isDestroyed()) {
-    return;
-  }
+  if (!settingsWindow || settingsWindow.isDestroyed()) return;
 
   settingsExpanded = !settingsExpanded;
 
-  const bounds = settingsWindow.getBounds();
+  const display = screen.getPrimaryDisplay();
+  const area = display.workArea;
 
   if (settingsExpanded) {
     settingsWindow.setBounds({
-      x: bounds.x - (SETTINGS_EXPANDED_WIDTH - SETTINGS_SIZE),
-      y: bounds.y,
-      width: SETTINGS_EXPANDED_WIDTH,
-      height: SETTINGS_EXPANDED_HEIGHT
+      x: area.x + area.width - SETTINGS_WIDTH,
+      y: area.y,
+      width: SETTINGS_WIDTH,
+      height: SETTINGS_HEIGHT
     });
   } else {
     settingsWindow.setBounds({
-      x: bounds.x + (SETTINGS_EXPANDED_WIDTH - SETTINGS_SIZE),
-      y: bounds.y,
+      x: area.x + area.width - SETTINGS_SIZE,
+      y: area.y,
       width: SETTINGS_SIZE,
       height: SETTINGS_SIZE
     });
@@ -120,8 +115,76 @@ ipcMain.on('toggle-settings', () => {
 });
 
 
-// START HAVEN
+// LIST AVAILABLE MONITORS
+ipcMain.handle('list-screens', async () => {
+  const sources = await desktopCapturer.getSources({
+    types: ['screen'],
+    thumbnailSize: { width: 0, height: 0 }
+  });
+
+  return sources.map(source => ({
+    id: source.id,
+    name: source.name
+  }));
+});
+
+
+// REMEMBER THE MONITOR THE USER SELECTED
+ipcMain.handle('select-screen', async (event, screenId) => {
+  const sources = await desktopCapturer.getSources({
+    types: ['screen'],
+    thumbnailSize: { width: 0, height: 0 }
+  });
+
+  const selected = sources.find(source => source.id === screenId);
+
+  if (!selected) {
+    return false;
+  }
+
+  selectedScreenId = selected.id;
+  return true;
+});
+
+
+// HANDLE SCREEN CAPTURE REQUESTS
 app.whenReady().then(() => {
+
+  session.defaultSession.setDisplayMediaRequestHandler(
+    async (request, callback) => {
+
+      if (!selectedScreenId) {
+        callback(null);
+        return;
+      }
+
+      try {
+        const sources = await desktopCapturer.getSources({
+          types: ['screen'],
+          thumbnailSize: { width: 0, height: 0 }
+        });
+
+        const selectedSource = sources.find(
+          source => source.id === selectedScreenId
+        );
+
+        if (!selectedSource) {
+          callback(null);
+          return;
+        }
+
+        // Capture video only. No system audio.
+        callback({
+          video: selectedSource
+        });
+
+      } catch (error) {
+        console.error('Screen capture error:', error);
+        callback(null);
+      }
+    }
+  );
+
   createWindows();
 });
 

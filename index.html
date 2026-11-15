@@ -5,11 +5,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Haven</title>
 
   <style>
-
     * {
       box-sizing: border-box;
     }
@@ -17,63 +15,52 @@
     html, body {
       margin: 0;
       padding: 0;
-
       width: 100%;
       height: 100%;
-
       background: transparent;
       overflow: hidden;
-
       font-family: Arial, sans-serif;
     }
 
-
-    /* =========================
-       CHARACTER WINDOW
-    ========================= */
+    /* CHARACTER LAYER */
 
     #character-screen {
+      display: none;
+      position: relative;
       width: 100%;
       height: 100%;
-
-      position: relative;
-
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-
-      border: 1px solid rgba(170, 130, 255, 0.85);
     }
 
     #character {
-      width: 100%;
-      height: 95%;
+      position: absolute;
+      left: 20px;
+      bottom: 20px;
+
+      width: 220px;
+      height: 260px;
+
+      max-width: 22vw;
+      max-height: 32vh;
 
       object-fit: contain;
-      object-position: center bottom;
+      object-position: bottom left;
 
       user-select: none;
       -webkit-user-drag: none;
     }
 
 
-    /* =========================
-       SETTINGS WINDOW
-    ========================= */
+    /* SETTINGS LAYER */
 
     #settings-screen {
+      display: none;
+      position: relative;
       width: 100%;
       height: 100%;
-
-      position: relative;
     }
-
-
-    /* SETTINGS COG */
 
     #settings-button {
       position: absolute;
-
       top: 0;
       right: 0;
 
@@ -82,60 +69,120 @@
 
       border: none;
       padding: 5px;
-
       background: transparent;
-
       cursor: pointer;
     }
 
     #settings-button img {
       width: 100%;
       height: 100%;
-
       object-fit: contain;
     }
 
 
-    /* FOUR SETTINGS BOXES */
+    /* SETTINGS PANEL */
 
     #settings-panel {
       display: none;
 
       position: absolute;
-
       top: 62px;
       right: 8px;
 
-      width: 264px;
-      height: 190px;
+      width: 364px;
+      height: 465px;
 
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: 1fr 1fr;
+      padding: 12px;
 
-      gap: 8px;
-      padding: 5px;
+      background: rgba(25, 22, 38, 0.96);
+      border: 1px solid rgba(170, 130, 255, 0.5);
+      border-radius: 12px;
+
+      color: white;
+      overflow-y: auto;
     }
 
     #settings-panel.open {
+      display: block;
+    }
+
+    .box-grid {
       display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
     }
 
     .settings-box {
       width: 100%;
-      height: 100%;
-
-      object-fit: fill;
+      height: 70px;
+      object-fit: contain;
     }
 
+
+    /* SCREEN CAPTURE CONTROLS */
+
+    .capture-section {
+      border-top: 1px solid rgba(255,255,255,0.2);
+      padding-top: 12px;
+    }
+
+    .capture-section h3 {
+      font-size: 15px;
+      margin: 0 0 10px;
+    }
+
+    .capture-section label {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+
+    select, button.capture-button {
+      width: 100%;
+      padding: 9px;
+      margin-bottom: 8px;
+      border-radius: 6px;
+      border: 1px solid #8170bd;
+      background: #302a43;
+      color: white;
+    }
+
+    button.capture-button {
+      cursor: pointer;
+    }
+
+    button.capture-button:hover {
+      background: #51436f;
+    }
+
+    #capture-status {
+      font-size: 12px;
+      margin: 5px 0;
+      color: #c9baff;
+    }
+
+    #capture-count {
+      font-size: 12px;
+      margin: 5px 0 10px;
+    }
+
+    #capture-preview {
+      display: none;
+      width: 100%;
+      max-height: 130px;
+      object-fit: contain;
+      background: #111;
+      border-radius: 6px;
+    }
   </style>
 </head>
-
 
 <body>
 
   <!-- CHARACTER WINDOW -->
 
-  <div id="character-screen" style="display: none;">
+  <div id="character-screen">
 
     <img
       id="character"
@@ -146,54 +193,64 @@
   </div>
 
 
-
   <!-- SETTINGS WINDOW -->
 
-  <div id="settings-screen" style="display: none;">
+  <div id="settings-screen">
 
     <button id="settings-button" aria-label="Toggle settings">
-
-      <img
-        src="image_assets/Settings.png"
-        alt="Settings"
-      >
-
+      <img src="image_assets/Settings.png" alt="Settings">
     </button>
-
 
     <div id="settings-panel">
 
-      <img
-        class="settings-box"
-        src="image_assets/boxidkyet.png"
-        alt="Settings box"
-      >
+      <div class="box-grid">
+        <img class="settings-box" src="image_assets/boxidkyet.png" alt="">
+        <img class="settings-box" src="image_assets/boxidkyet.png" alt="">
+        <img class="settings-box" src="image_assets/boxidkyet.png" alt="">
+        <img class="settings-box" src="image_assets/boxidkyet.png" alt="">
+      </div>
 
-      <img
-        class="settings-box"
-        src="image_assets/boxidkyet.png"
-        alt="Settings box"
-      >
+      <div class="capture-section">
 
-      <img
-        class="settings-box"
-        src="image_assets/boxidkyet.png"
-        alt="Settings box"
-      >
+        <h3>Screen Observation</h3>
 
-      <img
-        class="settings-box"
-        src="image_assets/boxidkyet.png"
-        alt="Settings box"
-      >
+        <label for="screen-select">Choose a display</label>
+
+        <select id="screen-select">
+          <option value="">Choose a display...</option>
+        </select>
+
+        <button class="capture-button" id="refresh-screens">
+          Refresh Displays
+        </button>
+
+        <button class="capture-button" id="start-capture">
+          Enable Screen Observation
+        </button>
+
+        <button class="capture-button" id="stop-capture">
+          Stop Observation
+        </button>
+
+        <p id="capture-status">Observation is off.</p>
+
+        <p id="capture-count">
+          Screenshots captured: 0
+        </p>
+
+        <video
+          id="capture-preview"
+          autoplay
+          muted
+          playsinline
+        ></video>
+
+      </div>
 
     </div>
 
   </div>
 
-
-
-  <!-- UI JAVASCRIPT -->
 
   <script>
 
@@ -204,22 +261,17 @@
     const view = params.get('view');
 
 
-    // CHARACTER WINDOW LOGIC
+    // CHARACTER IMAGE SWITCHING
 
     if (view === 'character') {
 
       document.getElementById(
         'character-screen'
-      ).style.display = 'flex';
+      ).style.display = 'block';
 
-      const character = document.getElementById(
-        'character'
-      );
+      const character = document.getElementById('character');
 
       let showingFingerCat = true;
-
-
-      // Switch expressions every 3 seconds
 
       setInterval(() => {
 
@@ -234,8 +286,7 @@
     }
 
 
-
-    // SETTINGS WINDOW LOGIC
+    // SETTINGS AND SCREEN CAPTURE
 
     if (view === 'settings') {
 
@@ -243,31 +294,267 @@
         'settings-screen'
       ).style.display = 'block';
 
-      const button = document.getElementById(
+      const settingsButton = document.getElementById(
         'settings-button'
       );
 
-      const panel = document.getElementById(
+      const settingsPanel = document.getElementById(
         'settings-panel'
       );
 
+      const screenSelect = document.getElementById(
+        'screen-select'
+      );
+
+      const refreshButton = document.getElementById(
+        'refresh-screens'
+      );
+
+      const startButton = document.getElementById(
+        'start-capture'
+      );
+
+      const stopButton = document.getElementById(
+        'stop-capture'
+      );
+
+      const status = document.getElementById(
+        'capture-status'
+      );
+
+      const countLabel = document.getElementById(
+        'capture-count'
+      );
+
+      const preview = document.getElementById(
+        'capture-preview'
+      );
+
       let isOpen = false;
+      let captureStream = null;
+      let captureInterval = null;
+      let screenshotCount = 0;
+
+      let selectedScreen = null;
 
 
-      // Toggle settings when cog is clicked
+      // OPEN / CLOSE SETTINGS
 
-      button.addEventListener('click', () => {
+      settingsButton.addEventListener('click', () => {
 
         isOpen = !isOpen;
 
-        panel.classList.toggle(
-          'open',
-          isOpen
-        );
+        settingsPanel.classList.toggle('open', isOpen);
 
         window.haven.toggleSettings();
 
       });
+
+
+      // LOAD AVAILABLE DISPLAYS
+
+      async function loadScreens() {
+
+        try {
+
+          status.textContent = 'Looking for displays...';
+
+          const screens = await window.haven.listScreens();
+
+          screenSelect.innerHTML = '';
+
+          if (screens.length === 0) {
+            screenSelect.innerHTML =
+              '<option value="">No displays found</option>';
+
+            status.textContent = 'No displays found.';
+            return;
+          }
+
+          screens.forEach((item, index) => {
+
+            const option = document.createElement('option');
+
+            option.value = item.id;
+            option.textContent = item.name || `Display ${index + 1}`;
+
+            screenSelect.appendChild(option);
+
+          });
+
+          selectedScreen = screens[0].id;
+
+          screenSelect.value = selectedScreen;
+
+          const accepted = await window.haven.selectScreen(
+            selectedScreen
+          );
+
+          status.textContent = accepted
+            ? 'Display ready. Observation is off.'
+            : 'Could not select that display.';
+
+        } catch (error) {
+
+          console.error(error);
+          status.textContent = 'Could not load displays.';
+
+        }
+
+      }
+
+
+      screenSelect.addEventListener('change', async () => {
+
+        selectedScreen = screenSelect.value;
+
+        const accepted = await window.haven.selectScreen(
+          selectedScreen
+        );
+
+        status.textContent = accepted
+          ? 'Display selected. Observation is off.'
+          : 'Could not select that display.';
+
+      });
+
+
+      refreshButton.addEventListener('click', loadScreens);
+
+
+      // START SCREEN CAPTURE
+
+      async function startCapture() {
+
+        if (captureStream) return;
+
+        if (!selectedScreen) {
+          status.textContent = 'Choose a display first.';
+          return;
+        }
+
+        try {
+
+          status.textContent = 'Requesting screen access...';
+
+          captureStream = await navigator.mediaDevices.getDisplayMedia({
+            video: {
+              frameRate: 30
+            },
+            audio: false
+          });
+
+          preview.srcObject = captureStream;
+          preview.style.display = 'block';
+
+          await preview.play();
+
+          screenshotCount = 0;
+          countLabel.textContent = 'Screenshots captured: 0';
+
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+
+          function captureFrame() {
+
+            if (!captureStream || !preview.videoWidth) return;
+
+            // Keep a small in-memory frame for this prototype.
+            // Nothing is saved to disk or sent to an AI.
+            const scale = Math.min(
+              1,
+              1280 / preview.videoWidth
+            );
+
+            canvas.width = Math.round(
+              preview.videoWidth * scale
+            );
+
+            canvas.height = Math.round(
+              preview.videoHeight * scale
+            );
+
+            context.drawImage(
+              preview,
+              0,
+              0,
+              canvas.width,
+              canvas.height
+            );
+
+            screenshotCount++;
+
+            countLabel.textContent =
+              `Screenshots captured: ${screenshotCount}`;
+          }
+
+          captureFrame();
+
+          captureInterval = setInterval(
+            captureFrame,
+            3000
+          );
+
+          status.textContent =
+            'Observation is ON. Capturing every 3 seconds.';
+
+          // Stop if the user ends sharing through the browser/system UI.
+          captureStream.getVideoTracks()[0].addEventListener(
+            'ended',
+            stopCapture
+          );
+
+        } catch (error) {
+
+          console.error(error);
+
+          status.textContent =
+            'Screen capture was cancelled or could not start.';
+
+          stopCapture();
+
+        }
+
+      }
+
+
+      // STOP SCREEN CAPTURE
+
+      function stopCapture() {
+
+        if (captureInterval) {
+          clearInterval(captureInterval);
+          captureInterval = null;
+        }
+
+        if (captureStream) {
+
+          captureStream.getTracks().forEach(track => {
+            track.stop();
+          });
+
+          captureStream = null;
+        }
+
+        preview.pause();
+        preview.srcObject = null;
+        preview.style.display = 'none';
+
+        status.textContent = 'Observation is OFF.';
+
+      }
+
+
+      startButton.addEventListener('click', startCapture);
+      stopButton.addEventListener('click', stopCapture);
+
+
+      // LOAD DISPLAYS WHEN SETTINGS PAGE STARTS
+
+      loadScreens();
+
+      // Clean up if the settings window closes.
+      window.addEventListener('beforeunload', stopCapture);
 
     }
 
