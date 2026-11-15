@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -22,7 +21,7 @@
       font-family: Arial, sans-serif;
     }
 
-    /* CHARACTER LAYER */
+    /* CHARACTER WINDOW */
 
     #character-screen {
       display: none;
@@ -30,27 +29,24 @@
       width: 100%;
       height: 100%;
     }
+#character {
+  position: absolute;
+  left: 20px;
+  bottom: 20px;
 
-    #character {
-      position: absolute;
-      left: 20px;
-      bottom: 20px;
+  width: 500px;
+height: 500px;
 
-      width: 220px;
-      height: 260px;
+max-width: 50.0vw;
+max-height: 50.0vh;
 
-      max-width: 22vw;
-      max-height: 32vh;
+  object-fit: contain;
+  object-position: bottom left;
 
-      object-fit: contain;
-      object-position: bottom left;
-
-      user-select: none;
-      -webkit-user-drag: none;
-    }
-
-
-    /* SETTINGS LAYER */
+  user-select: none;
+  -webkit-user-drag: none;
+}
+    /* SETTINGS WINDOW */
 
     #settings-screen {
       display: none;
@@ -63,10 +59,8 @@
       position: absolute;
       top: 0;
       right: 0;
-
       width: 56px;
       height: 56px;
-
       border: none;
       padding: 5px;
       background: transparent;
@@ -79,25 +73,17 @@
       object-fit: contain;
     }
 
-
-    /* SETTINGS PANEL */
-
     #settings-panel {
       display: none;
-
       position: absolute;
       top: 62px;
       right: 8px;
-
       width: 364px;
-      height: 465px;
-
+      height: 548px;
       padding: 12px;
-
-      background: rgba(25, 22, 38, 0.96);
+      background: rgba(25, 22, 38, 0.97);
       border: 1px solid rgba(170, 130, 255, 0.5);
       border-radius: 12px;
-
       color: white;
       overflow-y: auto;
     }
@@ -106,39 +92,37 @@
       display: block;
     }
 
-    .box-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 14px;
+    h2 {
+      font-size: 19px;
+      margin: 3px 0 12px;
     }
 
-    .settings-box {
-      width: 100%;
-      height: 70px;
-      object-fit: contain;
-    }
-
-
-    /* SCREEN CAPTURE CONTROLS */
-
-    .capture-section {
-      border-top: 1px solid rgba(255,255,255,0.2);
-      padding-top: 12px;
-    }
-
-    .capture-section h3 {
+    h3 {
       font-size: 15px;
       margin: 0 0 10px;
     }
 
-    .capture-section label {
-      display: block;
-      font-size: 12px;
-      margin-bottom: 5px;
+    .section {
+      border-top: 1px solid rgba(255,255,255,0.2);
+      padding-top: 12px;
+      margin-top: 13px;
     }
 
-    select, button.capture-button {
+    .description {
+      color: #c9c1dc;
+      font-size: 12px;
+      line-height: 1.5;
+      margin: 5px 0 10px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    select,
+    button.action-button {
       width: 100%;
       padding: 9px;
       margin-bottom: 8px;
@@ -146,25 +130,82 @@
       border: 1px solid #8170bd;
       background: #302a43;
       color: white;
+      font-size: 13px;
     }
 
-    button.capture-button {
+    button.action-button {
       cursor: pointer;
     }
 
-    button.capture-button:hover {
+    button.action-button:hover {
       background: #51436f;
     }
 
-    #capture-status {
-      font-size: 12px;
-      margin: 5px 0;
-      color: #c9baff;
+    button.secondary {
+      background: #242033;
     }
 
+    .box-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .settings-box {
+      width: 100%;
+      height: 60px;
+      object-fit: contain;
+    }
+
+    #character-status,
+    #capture-status,
     #capture-count {
       font-size: 12px;
+      color: #c9baff;
+      line-height: 1.4;
       margin: 5px 0 10px;
+    }
+
+    .expression-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .expression-grid button {
+      padding: 8px;
+      border: 1px solid #8170bd;
+      border-radius: 6px;
+      background: #302a43;
+      color: white;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .expression-grid button:hover {
+      background: #51436f;
+    }
+
+    #import-instructions {
+      display: none;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(170,130,255,0.35);
+      border-radius: 8px;
+      padding: 10px;
+      margin: 5px 0 10px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    #import-instructions.open {
+      display: block;
+    }
+
+    #import-instructions code {
+      color: #e0d4ff;
+      font-size: 11px;
+      overflow-wrap: anywhere;
     }
 
     #capture-preview {
@@ -183,13 +224,11 @@
   <!-- CHARACTER WINDOW -->
 
   <div id="character-screen">
-
     <img
       id="character"
-      src="image_assets/fingercat.jpg"
+      src="image_assets/pink_neutral.png"
       alt="Haven character"
     >
-
   </div>
 
 
@@ -203,6 +242,8 @@
 
     <div id="settings-panel">
 
+      <h2>Haven Settings</h2>
+
       <div class="box-grid">
         <img class="settings-box" src="image_assets/boxidkyet.png" alt="">
         <img class="settings-box" src="image_assets/boxidkyet.png" alt="">
@@ -210,9 +251,109 @@
         <img class="settings-box" src="image_assets/boxidkyet.png" alt="">
       </div>
 
-      <div class="capture-section">
+
+      <!-- CHARACTER SELECTOR -->
+
+      <div class="section">
+
+        <h3>My Character</h3>
+
+        <label for="character-select">
+          Choose your character
+        </label>
+
+        <select id="character-select">
+          <option value="pink">Pink</option>
+          <option value="bb">BB</option>
+        </select>
+
+        <button class="action-button" id="import-character-button">
+          + Import Character
+        </button>
+
+        <div id="import-instructions">
+
+          <strong>How to prepare your character</strong>
+
+          <p>
+            Put your character's images into one folder.
+            The two required images must have these exact names:
+          </p>
+
+          <p>
+            <code>neutral.png</code><br>
+            <code>talking.png</code>
+          </p>
+
+          <strong>Optional expressions</strong>
+
+          <p>
+            <code>pleased.png</code><br>
+            <code>sad.png</code><br>
+            <code>angry.png</code><br>
+            <code>shocked.png</code><br>
+            <code>disappointed.png</code>
+          </p>
+
+          <p>
+            PNG, JPG, JPEG and WEBP images are supported.
+            Keep the filenames exactly as shown.
+          </p>
+
+          <p>
+            Missing optional expressions will automatically
+            use your neutral image.
+          </p>
+
+          <button class="action-button" id="choose-character-folder">
+            Choose Character Folder
+          </button>
+
+        </div>
+
+        <p id="character-status">
+          Current character: Pink
+        </p>
+
+      </div>
+
+
+      <!-- EXPRESSION TESTER -->
+
+      <div class="section">
+
+        <h3>Test Expressions</h3>
+
+        <p class="description">
+          Click an expression to see how your selected character looks.
+        </p>
+
+        <div class="expression-grid">
+
+          <button data-expression="neutral">Neutral</button>
+          <button data-expression="talking">Talking</button>
+          <button data-expression="pleased">Pleased</button>
+          <button data-expression="sad">Sad</button>
+          <button data-expression="angry">Angry</button>
+          <button data-expression="shocked">Shocked</button>
+          <button data-expression="disappointed">Disappointed</button>
+
+        </div>
+
+      </div>
+
+
+      <!-- SCREEN OBSERVATION -->
+
+      <div class="section">
 
         <h3>Screen Observation</h3>
+
+        <p class="description">
+          Choose a display and enable observation when you want Haven
+          to capture screenshots. Screenshots are currently only
+          captured locally; they are not sent to an AI.
+        </p>
 
         <label for="screen-select">Choose a display</label>
 
@@ -220,19 +361,21 @@
           <option value="">Choose a display...</option>
         </select>
 
-        <button class="capture-button" id="refresh-screens">
+        <button class="action-button" id="refresh-screens">
           Refresh Displays
         </button>
 
-        <button class="capture-button" id="start-capture">
+        <button class="action-button" id="start-capture">
           Enable Screen Observation
         </button>
 
-        <button class="capture-button" id="stop-capture">
+        <button class="action-button secondary" id="stop-capture">
           Stop Observation
         </button>
 
-        <p id="capture-status">Observation is off.</p>
+        <p id="capture-status">
+          Observation is off.
+        </p>
 
         <p id="capture-count">
           Screenshots captured: 0
@@ -248,94 +391,67 @@
       </div>
 
     </div>
-
   </div>
 
 
   <script>
 
-    const params = new URLSearchParams(
-      window.location.search
-    );
-
+    const params = new URLSearchParams(window.location.search);
     const view = params.get('view');
 
 
-    // CHARACTER IMAGE SWITCHING
+    // --------------------------------
+    // CHARACTER WINDOW
+    // --------------------------------
 
     if (view === 'character') {
 
-      document.getElementById(
-        'character-screen'
-      ).style.display = 'block';
+      document.getElementById('character-screen').style.display = 'block';
 
-      const character = document.getElementById('character');
+      const characterImage = document.getElementById('character');
 
-      let showingFingerCat = true;
+      window.haven.onCharacterUpdate(data => {
 
-      setInterval(() => {
+        if (!data || !data.image) return;
 
-        showingFingerCat = !showingFingerCat;
+        characterImage.src = data.image;
+        characterImage.alt = data.name;
 
-        character.src = showingFingerCat
-          ? 'image_assets/fingercat.jpg'
-          : 'image_assets/nofingercat.jpg';
-
-      }, 3000);
+      });
 
     }
 
 
-    // SETTINGS AND SCREEN CAPTURE
+    // --------------------------------
+    // SETTINGS WINDOW
+    // --------------------------------
 
     if (view === 'settings') {
 
-      document.getElementById(
-        'settings-screen'
-      ).style.display = 'block';
+      document.getElementById('settings-screen').style.display = 'block';
 
-      const settingsButton = document.getElementById(
-        'settings-button'
-      );
+      const settingsButton =
+        document.getElementById('settings-button');
 
-      const settingsPanel = document.getElementById(
-        'settings-panel'
-      );
+      const settingsPanel =
+        document.getElementById('settings-panel');
 
-      const screenSelect = document.getElementById(
-        'screen-select'
-      );
+      const characterSelect =
+        document.getElementById('character-select');
 
-      const refreshButton = document.getElementById(
-        'refresh-screens'
-      );
+      const characterStatus =
+        document.getElementById('character-status');
 
-      const startButton = document.getElementById(
-        'start-capture'
-      );
+      const importButton =
+        document.getElementById('import-character-button');
 
-      const stopButton = document.getElementById(
-        'stop-capture'
-      );
+      const instructions =
+        document.getElementById('import-instructions');
 
-      const status = document.getElementById(
-        'capture-status'
-      );
-
-      const countLabel = document.getElementById(
-        'capture-count'
-      );
-
-      const preview = document.getElementById(
-        'capture-preview'
-      );
+      const chooseFolderButton =
+        document.getElementById('choose-character-folder');
 
       let isOpen = false;
-      let captureStream = null;
-      let captureInterval = null;
-      let screenshotCount = 0;
-
-      let selectedScreen = null;
 
 
       // OPEN / CLOSE SETTINGS
@@ -351,24 +467,189 @@
       });
 
 
-      // LOAD AVAILABLE DISPLAYS
+      // LOAD CHARACTERS
+
+      async function loadCharacters() {
+
+        try {
+
+          const characters = await window.haven.getCharacters();
+
+          const selected = await window.haven.getSelectedCharacter();
+
+          characterSelect.innerHTML = '';
+
+          characters.forEach(character => {
+
+            const option = document.createElement('option');
+
+            option.value = character.id;
+            option.textContent = character.name;
+
+            characterSelect.appendChild(option);
+
+          });
+
+          characterSelect.value = selected;
+
+          const current = characters.find(
+            character => character.id === selected
+          );
+
+          characterStatus.textContent = current
+            ? `Current character: ${current.name}`
+            : 'Choose a character';
+
+        } catch (error) {
+
+          console.error(error);
+
+          characterStatus.textContent =
+            'Could not load characters.';
+
+        }
+
+      }
+
+
+      // CHANGE CHARACTER
+
+      characterSelect.addEventListener('change', async () => {
+
+        const accepted = await window.haven.selectCharacter(
+          characterSelect.value
+        );
+
+        if (accepted) {
+          const selectedOption =
+            characterSelect.options[characterSelect.selectedIndex];
+
+          characterStatus.textContent =
+            `Current character: ${selectedOption.textContent}`;
+        } else {
+          characterStatus.textContent =
+            'Could not select that character.';
+        }
+
+      });
+
+
+      // SHOW IMPORT INSTRUCTIONS
+
+      importButton.addEventListener('click', () => {
+
+        instructions.classList.toggle('open');
+
+      });
+
+
+      // OPEN FOLDER PICKER AND IMPORT
+
+      chooseFolderButton.addEventListener('click', async () => {
+
+        chooseFolderButton.disabled = true;
+        chooseFolderButton.textContent = 'Importing...';
+
+        try {
+
+          const result = await window.haven.importCharacter();
+
+          if (result.success) {
+
+            characterStatus.textContent =
+              `${result.name} was imported successfully!`;
+
+            instructions.classList.remove('open');
+
+            await loadCharacters();
+
+          } else {
+
+            characterStatus.textContent = result.message;
+
+          }
+
+        } catch (error) {
+
+          console.error(error);
+
+          characterStatus.textContent =
+            'Something went wrong while importing.';
+
+        } finally {
+
+          chooseFolderButton.disabled = false;
+          chooseFolderButton.textContent = 'Choose Character Folder';
+
+        }
+
+      });
+
+
+      // EXPRESSION TEST BUTTONS
+
+      document.querySelectorAll('[data-expression]').forEach(button => {
+
+        button.addEventListener('click', async () => {
+
+          const expression = button.dataset.expression;
+
+          await window.haven.setExpression(expression);
+
+        });
+
+      });
+
+
+      // --------------------------------
+      // SCREEN OBSERVATION
+      // --------------------------------
+
+      const screenSelect =
+        document.getElementById('screen-select');
+
+      const refreshButton =
+        document.getElementById('refresh-screens');
+
+      const startButton =
+        document.getElementById('start-capture');
+
+      const stopButton =
+        document.getElementById('stop-capture');
+
+      const captureStatus =
+        document.getElementById('capture-status');
+
+      const countLabel =
+        document.getElementById('capture-count');
+
+      const preview =
+        document.getElementById('capture-preview');
+
+      let captureStream = null;
+      let captureInterval = null;
+      let screenshotCount = 0;
+      let selectedScreen = null;
+
 
       async function loadScreens() {
 
         try {
 
-          status.textContent = 'Looking for displays...';
+          captureStatus.textContent = 'Looking for displays...';
 
           const screens = await window.haven.listScreens();
 
           screenSelect.innerHTML = '';
 
           if (screens.length === 0) {
+
             screenSelect.innerHTML =
               '<option value="">No displays found</option>';
 
-            status.textContent = 'No displays found.';
+            captureStatus.textContent = 'No displays found.';
             return;
+
           }
 
           screens.forEach((item, index) => {
@@ -376,28 +657,28 @@
             const option = document.createElement('option');
 
             option.value = item.id;
-            option.textContent = item.name || `Display ${index + 1}`;
+            option.textContent =
+              item.name || `Display ${index + 1}`;
 
             screenSelect.appendChild(option);
 
           });
 
           selectedScreen = screens[0].id;
-
           screenSelect.value = selectedScreen;
 
           const accepted = await window.haven.selectScreen(
             selectedScreen
           );
 
-          status.textContent = accepted
+          captureStatus.textContent = accepted
             ? 'Display ready. Observation is off.'
             : 'Could not select that display.';
 
         } catch (error) {
 
           console.error(error);
-          status.textContent = 'Could not load displays.';
+          captureStatus.textContent = 'Could not load displays.';
 
         }
 
@@ -412,7 +693,7 @@
           selectedScreen
         );
 
-        status.textContent = accepted
+        captureStatus.textContent = accepted
           ? 'Display selected. Observation is off.'
           : 'Could not select that display.';
 
@@ -422,27 +703,33 @@
       refreshButton.addEventListener('click', loadScreens);
 
 
-      // START SCREEN CAPTURE
+      // START CAPTURE
 
       async function startCapture() {
 
         if (captureStream) return;
 
         if (!selectedScreen) {
-          status.textContent = 'Choose a display first.';
+
+          captureStatus.textContent =
+            'Choose a display first.';
+
           return;
+
         }
 
         try {
 
-          status.textContent = 'Requesting screen access...';
+          captureStatus.textContent =
+            'Requesting screen access...';
 
-          captureStream = await navigator.mediaDevices.getDisplayMedia({
-            video: {
-              frameRate: 30
-            },
-            audio: false
-          });
+          captureStream =
+            await navigator.mediaDevices.getDisplayMedia({
+              video: {
+                frameRate: 30
+              },
+              audio: false
+            });
 
           preview.srcObject = captureStream;
           preview.style.display = 'block';
@@ -450,7 +737,9 @@
           await preview.play();
 
           screenshotCount = 0;
-          countLabel.textContent = 'Screenshots captured: 0';
+
+          countLabel.textContent =
+            'Screenshots captured: 0';
 
           const canvas = document.createElement('canvas');
           const context = canvas.getContext('2d');
@@ -459,8 +748,6 @@
 
             if (!captureStream || !preview.videoWidth) return;
 
-            // Keep a small in-memory frame for this prototype.
-            // Nothing is saved to disk or sent to an AI.
             const scale = Math.min(
               1,
               1280 / preview.videoWidth
@@ -486,6 +773,7 @@
 
             countLabel.textContent =
               `Screenshots captured: ${screenshotCount}`;
+
           }
 
           captureFrame();
@@ -495,10 +783,9 @@
             3000
           );
 
-          status.textContent =
+          captureStatus.textContent =
             'Observation is ON. Capturing every 3 seconds.';
 
-          // Stop if the user ends sharing through the browser/system UI.
           captureStream.getVideoTracks()[0].addEventListener(
             'ended',
             stopCapture
@@ -508,7 +795,7 @@
 
           console.error(error);
 
-          status.textContent =
+          captureStatus.textContent =
             'Screen capture was cancelled or could not start.';
 
           stopCapture();
@@ -518,13 +805,15 @@
       }
 
 
-      // STOP SCREEN CAPTURE
+      // STOP CAPTURE
 
       function stopCapture() {
 
         if (captureInterval) {
+
           clearInterval(captureInterval);
           captureInterval = null;
+
         }
 
         if (captureStream) {
@@ -534,13 +823,15 @@
           });
 
           captureStream = null;
+
         }
 
         preview.pause();
         preview.srcObject = null;
         preview.style.display = 'none';
 
-        status.textContent = 'Observation is OFF.';
+        captureStatus.textContent =
+          'Observation is OFF.';
 
       }
 
@@ -548,13 +839,13 @@
       startButton.addEventListener('click', startCapture);
       stopButton.addEventListener('click', stopCapture);
 
-
-      // LOAD DISPLAYS WHEN SETTINGS PAGE STARTS
-
-      loadScreens();
-
-      // Clean up if the settings window closes.
       window.addEventListener('beforeunload', stopCapture);
+
+
+      // INITIALIZE
+
+      loadCharacters();
+      loadScreens();
 
     }
 

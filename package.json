@@ -1,11 +1,11 @@
-
 {
   "name": "haven",
   "version": "1.0.0",
   "description": "",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."},
+    "start": "electron ."
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/TotTater/SWIFT-HAVEN-2026.git"
